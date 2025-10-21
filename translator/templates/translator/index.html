@@ -1,0 +1,118 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="tk">
+<head>
+  <meta charset="UTF-8">
+  <title>Iňlis ↔ Türkmen Oflaýn Terjimeçi</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'translator/style.css' %}">
+</head>
+<body class="bg-light">
+
+<div class="container text-center mt-5">
+  <h2 class="mb-4">🌍 Iňlis ↔ Türkmen Oflaýn Terjimeçi</h2>
+
+  <form method="get" class="p-4 shadow rounded bg-white d-flex flex-column align-items-center">
+
+    <!-- Input + Suggestions -->
+    <div class="mb-3 position-relative w-100" style="max-width:600px;">
+      <input type="text" name="query" id="queryInput"
+             class="form-control form-control-lg text-center"
+             placeholder="Tekst giriziň..." value="{{ query }}" autocomplete="off">
+
+      <!-- Suggestion box -->
+      <ul id="suggestionsList"
+          class="list-group position-absolute w-100 shadow-sm"
+          style="top:100%; left:0; z-index:1050; display:none; max-height:220px; overflow-y:auto;">
+      </ul>
+    </div>
+
+    <!-- Language selection -->
+    <div class="d-flex justify-content-center align-items-center gap-4 mb-3 flex-wrap">
+      <!-- English to Turkmen -->
+      <label class="d-flex align-items-center gap-2">
+        <input type="radio" name="direction" value="en_to_tm" {% if direction == 'en_to_tm' %}checked{% endif %}>
+        <img src="{% static 'translator/flags/gb.png' %}" width="30" alt="English flag">
+        <span class="fw-semibold">Iňlisçe</span>
+      </label>
+
+      <!-- Turkmen to English -->
+      <label class="d-flex align-items-center gap-2">
+        <input type="radio" name="direction" value="tm_to_en" {% if direction == 'tm_to_en' %}checked{% endif %}>
+        <img src="{% static 'translator/flags/tm.png' %}" width="30" alt="Turkmen flag">
+        <span class="fw-semibold">Türkmençe</span>
+      </label>
+    </div>
+
+    <!-- Translate button -->
+    <div class="text-center mt-3">
+      <button class="btn btn-success btn-lg px-5">Terjime et</button>
+    </div>
+  </form>
+
+  <!-- Result -->
+  {% if result %}
+ <div class="result-box mt-4 shadow p-4 bg-white rounded w-100" style="max-width:600px; margin:0 auto;">
+  <h4 class="text-primary text-center mb-3">Netije:</h4>
+  <p class="lead text-center mb-0">{{ result }}</p>
+</div>
+  {% endif %}
+</div>
+
+<!-- JavaScript for suggestions -->
+<script>
+const input = document.getElementById('queryInput');
+const list = document.getElementById('suggestionsList');
+const form = document.querySelector('form');
+
+// 🔹 Listen for typing
+input.addEventListener('input', () => {
+  const query = input.value.trim();
+  const direction = document.querySelector('input[name="direction"]:checked')?.value || 'en_to_tm';
+  
+  if (query.length < 1) {
+    list.style.display = 'none';
+    list.innerHTML = '';
+    return;
+  }
+
+  fetch(`/suggest/?q=${encodeURIComponent(query)}&direction=${direction}`)
+    .then(res => res.json())
+    .then(data => {
+      list.innerHTML = '';
+      if (data.suggestions.length > 0) {
+        data.suggestions.forEach(item => {
+          const li = document.createElement('li');
+          li.className = 'list-group-item list-group-item-action';
+          li.textContent = item;
+
+          // ✅ When clicked, fill input with the full word
+          li.addEventListener('click', () => {
+            input.value = item;
+            list.style.display = 'none';
+            input.focus(); // keep typing if user wants
+          });
+
+          list.appendChild(li);
+        });
+        list.style.display = 'block';
+      } else {
+        list.style.display = 'none';
+      }
+    });
+});
+
+// 🔹 Hide dropdown when clicking outside
+document.addEventListener('click', (e) => {
+  if (!list.contains(e.target) && e.target !== input) {
+    list.style.display = 'none';
+  }
+});
+
+// 🔹 Hide dropdown on form submit
+form.addEventListener('submit', () => list.style.display = 'none');
+</script>
+
+
+</body>
+</html>
